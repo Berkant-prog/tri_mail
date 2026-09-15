@@ -23,9 +23,8 @@ NOISE_SENDER_PATTERNS = {"noreply@", "no-reply@", "newsletter@"}
 
 
 class TriageDecision(BaseModel):
-    """Structured output for the LLM fallback."""
-
-    result: TriageResult
+    priority: TriageResult
+    needs_reply: bool = Field(description="True if the thread requires a personal response")
     reason: str = Field(description="One-sentence justification")
 
 
@@ -38,9 +37,9 @@ def _heuristic_triage(thread) -> TriageResult | None:
     if any(p in sender for p in NOISE_SENDER_PATTERNS):
         return "not_important"
     if sender in VIP_SENDERS:
-        return "important"
+        return {"priority": "critical", "needs_reply": True, "reason": "VIP sender"}
     if any(keyword in subject for keyword in URGENT_KEYWORDS):
-        return "important"
+        return {"priority": "critical", "needs_reply": True, "reason": "Urgent keyword found"}
 
     return None  # ambigu — on laisse le LLM trancher
 
@@ -50,7 +49,12 @@ _llm = ChatOpenAI(model="gpt-4.1-mini", temperature=0).with_structured_output(
 )
 
 _TRIAGE_PROMPT = """Tu tries un thread e-mail pour {user}.
-Décide s'il nécessite une réponse personnelle ("important") ou non ("not_important").
+
+1. Donne une priorité : critical / high / medium / low / not_important
+2. Donne needs_reply=false UNIQUEMENT si tu es quasi certain qu'aucune
+   réponse n'est attendue (notification automatisée, newsletter, accusé
+   de réception, spam). En cas de doute, needs_reply=true — mieux vaut
+   un brouillon inutile qu'une réponse manquée.
 
 De : {sender}
 Objet : {subject}
@@ -59,7 +63,7 @@ Corps (tronqué) :
 """
 
 
-def _llm_triage(thread) -> TriageResult:
+def _llm_triage(thread) -> TriageDecision:
     decision = _llm.invoke(
         _TRIAGE_PROMPT.format(
             user="Berkant",
@@ -68,14 +72,21 @@ def _llm_triage(thread) -> TriageResult:
             body=thread.body[:1000],
         )
     )
-    return decision.result
+    return decision
 
 
-def triage_node(state: MailAgentState) -> dict[str, TriageResult | str]:
+
+def triage_node(state: MailAgentState) -> TriageDecision:
     """Classify state.thread, heuristics first, LLM as fallback."""
 
     result = _heuristic_triage(state.thread)
     if result is not None:
-        return {"triage_result": result, "triage_method": "heuristic"}
+        return {**result, "triage_method": "heuristic"}
 
-    return {"triage_result": _llm_triage(state.thread), "triage_method": "llm"}
+    decision = _llm_triage(state.thread)
+    return {
+        "priority": decision.priority,
+        "needs_reply": decision.needs_reply,
+        "triage_method": "llm",
+        "reason": decision.reason,
+    }

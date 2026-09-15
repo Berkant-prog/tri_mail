@@ -1,7 +1,7 @@
 """Pydantic state models shared by the mail-agent graph nodes."""
 
 from typing import Literal
-
+from nodes.triage import TriageResult
 from pydantic import BaseModel, Field
 
 
@@ -34,5 +34,6 @@ class MailAgentState(BaseModel):
     draft: str | None = None
     iteration_count: int = 0
     edit_history: list[EditRecord] = Field(default_factory=list)
-    emergency: Literal["critical", "high", "medium", "low", "not_important"] | None = None
+    emergency: TriageResult | None = None
+    needs_reply: bool | None = None
     human_decision: Literal["send", "edit", "reject"] | None = None
