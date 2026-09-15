@@ -34,5 +34,5 @@ class MailAgentState(BaseModel):
     draft: str | None = None
     iteration_count: int = 0
     edit_history: list[EditRecord] = Field(default_factory=list)
-    triage_result: Literal["important", "not_important"] | None = None
+    emergency: Literal["critical", "high", "medium", "low", "not_important"] | None = None
     human_decision: Literal["send", "edit", "reject"] | None = None

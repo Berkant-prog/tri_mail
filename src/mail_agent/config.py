@@ -6,12 +6,16 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Runtime configuration for the API, model provider, Gmail, and Postgres."""
+    """Runtime configuration for the API, model provider, Gmail, and tracing."""
 
     postgres_dsn: str = "postgresql://postgres:postgres@localhost:5432/mail_agent"
     google_client_secret_file: str = "credentials.json"
     google_token_file: str = "token.json"
     openai_api_key: str | None = None
+    langsmith_api_key: str | None = None
+    langsmith_tracing: bool = False
+    langsmith_project: str = "mail-agent"
+    langsmith_endpoint: str = "https://eu.api.smith.langchain.com"
     api_host: str = "127.0.0.1"
     api_port: int = 8000
 

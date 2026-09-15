@@ -23,6 +23,12 @@ les chemins OAuth Google. Placez les identifiants Google attendus par Gmail API
 dans le chemin indiqué par `GOOGLE_CLIENT_SECRET_FILE`. Les champs du fichier
 `.env` sont chargés par `pydantic-settings`.
 
+Pour activer le suivi LangSmith, renseignez `LANGSMITH_API_KEY`, laissez
+`LANGSMITH_TRACING=true`, puis choisissez éventuellement un nom avec
+`LANGSMITH_PROJECT`. LangChain et LangGraph détectent automatiquement ces
+variables et envoient les traces des exécutions au projet LangSmith configuré.
+Ne mettez jamais la clé dans `.env.example` ni dans Git.
+
 ## Lancer l'API
 
 Depuis la racine du projet :
