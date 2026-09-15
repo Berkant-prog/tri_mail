@@ -1,0 +1,1 @@
+"""FastAPI entry points for the mail agent."""
